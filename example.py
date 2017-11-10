@@ -6,24 +6,27 @@ digital pin 6 of an Adafruit Feather board running CircuitPython.  It reads in a
 
 import board
 import neopixel
+
 from bmp_reader import BMPReader
 
-def get_index(i):
-    """ In the bitmap image, we're reading the pixel data out in the same order
-        for each row but in the Unicorn board, the rows 'snake', starting in the
-        top right and going right-to-left then left-to-right with each
-        subsequent row.  So we need to reverse the even rows to ensure the
-        display matches the bitmap image.
-    """
-    if int(i / 8) % 2: # Even line so reverse the index
-        return (int(i / 8) * 8) + (7 - int(i % 8))
-    else: # Odd line
-        return i
+img = BMPReader('image.bmp')
 
-imdata = BMPReader('image.bmp').get_pixels(64)
-pixels = neopixel.NeoPixel(board.D6, 64, brightness=0.025, auto_write=False)
+pixels = neopixel.NeoPixel(board.D6,
+                           img.width * img.height,
+                           brightness=0.025,
+                           auto_write=False)
 
-for i in range(64):
-    pixels[get_index(i)] = imdata.pop()
+pixel_grid = img.get_pixels()
+i = 0
+
+for row in range(img.height):
+    for col in range(img.width):
+        # The Unicorn Hat arranges its pixels starting top-right and alternates
+        # back and forth with each row so we need to reverse the even rows
+        if row % 2 == 0:
+            col = img.width - 1 - col
+
+        pixels[i] = pixel_grid[row][col]
+        i += 1
 
 pixels.show()
